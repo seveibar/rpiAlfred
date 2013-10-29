@@ -94,6 +94,11 @@ String SerialRead(char* buf)
   buf[MESSAGE_SIZE] = '\0';
 }
 
+float irVoltsToCentimeters(int volts)
+{
+   return 60.495 * pow(volts * .0049, -1.1904);
+}
+
 void setup()
 {
   Serial.begin(9600);
@@ -171,37 +176,13 @@ void loop()
         }
       }
       delay(500);
+      
+      // For use with SHARP 2YOAO2 (http://sharp-world.com/products/device/lineup/data/pdf/datasheet/gp2y0a02_e.pdf)
+      // Prints "CLOSE OBJECT : STOP" when object is approximately a meter away
       ir_val = analogRead(IR_PIN);
-      // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
-      // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-      pinMode(ULTRASOUND_PIN,INPUT);
-      digitalWrite(ULTRASOUND_PIN, LOW);
-      delayMicroseconds(2);
-      digitalWrite(ULTRASOUND_PIN, HIGH);
-      delayMicroseconds(5);
-      digitalWrite(ULTRASOUND_PIN, LOW);
-      // The same pin is used to read the signal from the PING))): a HIGH
-      // pulse whose duration is the time (in microseconds) from the sending
-      // of the ping to the reception of its echo off of an object.
-      pinMode(ULTRASOUND_PIN, INPUT);
-      int duration = pulseIn(ULTRASOUND_PIN, HIGH);
-      // convert the time into a distance
-      int inches = microsecondsToInches(duration); 
-      us_val = inches;
-      Serial.print(ir_val);
-      Serial.print(':');
-      Serial.print(us_val);
-      Serial.print(':');
-      Serial.print(ds_val);
+      float cmDistance = irVoltsToCentimeters(ir_val);
+      if (cmDistance < 150 && cmDistance > 100){
+        Serial.println("CLOSE OBJECT : STOP");
+      }
     }     
-}
-
-long microsecondsToInches(long microseconds)
-{
-  // According to Parallax's datasheet for the PING))), there are
-  // 73.746 microseconds per inch (i.e. sound travels at 1130 feet per
-  // second).  This gives the distance travelled by the ping, outbound
-  // and return, so we divide by 2 to get the distance of the obstacle.
-  // See: http://www.parallax.com/dl/docs/prod/acc/28015-PING-v1.3.pdf
-  return microseconds / 74 / 2;
 }
